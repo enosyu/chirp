@@ -53,6 +53,29 @@ const ratelimit = new Ratelimit({
 });
 
 export const postsRouter = createTRPCRouter({
+  getById: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      try {
+        const sanitizedId = input.id.replace(/[^a-zA-Z0-9]/g, '');
+        const post = await ctx.db.post.findUnique({
+          where: { id: sanitizedId },
+        });
+
+        console.log("Retrieved post:", post);
+
+        if (!post) {
+          console.error("Post not found for id:", input.id);
+          throw new TRPCError({ code: "NOT_FOUND" });
+        }
+
+        return (await addUserDataToPosts([post]))[0];
+      } catch (error) {
+        console.error("Error in getById:", error);
+        throw error; // Rethrow the error after logging
+      }
+    }),
+
   getAll: publicProcedure.query(async ({ ctx }) => {
     const posts = await ctx.db.post.findMany({
       take: 100,
@@ -68,13 +91,15 @@ export const postsRouter = createTRPCRouter({
       }),
     )
     .query(({ ctx, input }) =>
-      ctx.db.post.findMany({
-        where: {
-          authorId: input.userId,
-        },
-        take: 100,
-        orderBy: [{ createAt: "desc" }],
-      }).then(addUserDataToPosts),
+      ctx.db.post
+        .findMany({
+          where: {
+            authorId: input.userId,
+          },
+          take: 100,
+          orderBy: [{ createAt: "desc" }],
+        })
+        .then(addUserDataToPosts),
     ),
 
   create: privateProcedure

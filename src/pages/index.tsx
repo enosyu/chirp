@@ -15,7 +15,7 @@ const CreatePostWizard = () => {
 
   const [input, setInput] = useState("");
 
-  const ctx = api.useContext();
+  const ctx = api.useUtils();
 
   const { mutate, isLoading: isPosting } = api.posts.create.useMutation({
     onSuccess: () => {
@@ -32,7 +32,6 @@ const CreatePostWizard = () => {
     },
   });
 
-  console.log(user);
 
   if (!user) return null;
   return (
